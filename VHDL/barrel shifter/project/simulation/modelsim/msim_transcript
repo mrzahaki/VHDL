@@ -1,0 +1,50 @@
+# do barrelshifter_run_msim_rtl_vhdl.do
+# if {[file exists rtl_work]} {
+# 	vdel -lib rtl_work -all
+# }
+# vlib rtl_work
+# vmap work rtl_work
+# Model Technology ModelSim ALTERA vmap 10.4b Lib Mapping Utility 2015.05 May 27 2015
+# vmap -modelsim_quiet work rtl_work 
+# Copying H:/windows/programs/quartus/modelsim_ase/win32aloem/../modelsim.ini to modelsim.ini
+# Modifying modelsim.ini
+# ** Warning: Copied H:/windows/programs/quartus/modelsim_ase/win32aloem/../modelsim.ini to modelsim.ini.
+#          Updated modelsim.ini.
+# 
+# vcom -2008 -work work {C:/Users/Public/Documents/FPGA/barrelshifter/multiplexer.vhd}
+# Model Technology ModelSim ALTERA vcom 10.4b Compiler 2015.05 May 27 2015
+# Start time: 01:23:22 on Jun 15,2020
+# vcom -reportprogress 300 -2008 -work work C:/Users/Public/Documents/FPGA/barrelshifter/multiplexer.vhd 
+# -- Loading package STANDARD
+# -- Loading package TEXTIO
+# -- Loading package std_logic_1164
+# -- Compiling package std_mux
+# -- Compiling package body std_mux
+# -- Loading package std_mux
+# -- Loading package NUMERIC_STD
+# -- Loading package std_mux
+# -- Compiling entity mux
+# -- Compiling architecture Behavioral of mux
+# End time: 01:23:22 on Jun 15,2020, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vcom -2008 -work work {C:/Users/Public/Documents/FPGA/barrelshifter/shift.vhd}
+# Model Technology ModelSim ALTERA vcom 10.4b Compiler 2015.05 May 27 2015
+# Start time: 01:23:22 on Jun 15,2020
+# vcom -reportprogress 300 -2008 -work work C:/Users/Public/Documents/FPGA/barrelshifter/shift.vhd 
+# -- Loading package STANDARD
+# -- Loading package TEXTIO
+# -- Loading package std_logic_1164
+# -- Loading package std_logic_arith
+# -- Loading package STD_LOGIC_UNSIGNED
+# -- Compiling package shift
+# ** Error: C:/Users/Public/Documents/FPGA/barrelshifter/shift.vhd(106): (vcom-1396) Object "inp" cannot appear within the same interface list in which it is declared.
+# 
+# ** Error: C:/Users/Public/Documents/FPGA/barrelshifter/shift.vhd(106): (vcom-1079) Range left bound type Integer is not the same as right bound type (error).
+# ** Error: C:/Users/Public/Documents/FPGA/barrelshifter/shift.vhd(114): VHDL Compiler exiting
+# End time: 01:23:22 on Jun 15,2020, Elapsed time: 0:00:00
+# Errors: 3, Warnings: 0
+# ** Error: H:/windows/programs/quartus/modelsim_ase/win32aloem/vcom failed.
+# Error in macro ./barrelshifter_run_msim_rtl_vhdl.do line 9
+# H:/windows/programs/quartus/modelsim_ase/win32aloem/vcom failed.
+#     while executing
+# "vcom -2008 -work work {C:/Users/Public/Documents/FPGA/barrelshifter/shift.vhd}"

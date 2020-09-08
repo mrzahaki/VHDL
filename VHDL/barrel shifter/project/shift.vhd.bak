@@ -1,0 +1,212 @@
+--in the name of allah
+--
+--	in the name of ALLAH
+--
+-- brief: top module used shifter package (see work.shift.vhd)
+--
+-- designed by hussein zahaki
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+--config package 
+package shift is 
+
+----------------------------------------------------function definition
+
+--brief: barrel right shifter
+--ex: "10100011"(std_logic_vector) >>> 3 : result= "01110100"
+--param inp:  that takes input vector
+--param shift_num:  that takes number of shifts
+--
+--dsigned by hussein zahaki
+
+
+FUNCTION brshift  ( inp : std_logic_vector;	 shift_num :integer ) RETURN std_logic_vector;
+
+
+--brief: simple right shifter
+--ex: "10100011"(std_logic_vector) >>> 3 : result= "00010100"
+--param inp:  that takes input vector
+--param shift_num:  that takes number of shifts
+--
+--dsigned by hussein zahaki
+
+
+FUNCTION rshift  ( inp : std_logic_vector;	 shift_num :integer ) RETURN std_logic_vector;
+
+--brief: barrel left shifter
+--param inp:  that takes input vector
+--param shift_num:  that takes number of shifts
+--
+--dsigned by hussein zahaki
+
+FUNCTION blshift  ( inp : std_logic_vector; 	 shift_num :integer ) RETURN std_logic_vector;
+  
+
+--brief: simple left shifter
+--param inp:  that takes input vector
+--param shift_num:  that takes number of shifts
+--
+--dsigned by hussein zahaki
+
+FUNCTION lshift  ( inp : std_logic_vector; 	 shift_num :integer ) RETURN std_logic_vector;
+
+
+
+end package shift;
+
+package body shift is 
+------------------------------------------------------------------------------------------------
+--barrel right shifter
+FUNCTION brshift  ( 
+	inp : std_logic_vector; 		--low
+	shift_num :integer 	--high
+	
+) RETURN std_logic_vector is
+  
+	variable outp: std_logic_vector(inp'range);
+	variable tmp: integer range inp'range := inp'low + shift_num;
+	
+begin
+
+	
+FO0:FOR i IN inp'high downto (inp'high - shift_num + 1)  LOOP
+		tmp := tmp -1;
+		outp(tmp) := inp(i);		
+END LOOP;
+
+tmp :=	inp'high;
+
+FO1:FOR i IN (inp'high - shift_num) downto inp'low  LOOP
+
+		outp(tmp) := inp(i);
+		tmp := tmp -1;
+		
+END LOOP;
+	
+	assert ( (shift_num < inp'length) and (shift_num > 0) ) report "please take care about number of shifts!" severity error;	
+--	END IF;
+	
+	return outp;
+end function;
+------------------------------------------------------------------------------------------------
+--simple right shifter
+FUNCTION rshift  ( 
+	inp : std_logic_vector; 		--low
+	shift_num :integer 	--high
+	
+) RETURN std_logic_vector is
+  
+	variable outp: std_logic_vector(inp'range) := (others => '0'); 
+	variable tmp: integer range inp'range := inp'low + shift_num;
+	
+begin
+
+tmp :=	inp'high;
+
+FO1:FOR i IN (inp'high - shift_num) downto inp'low  LOOP
+
+		outp(tmp) := inp(i);
+		tmp := tmp -1;
+		
+END LOOP;
+	
+	assert ( (shift_num < inp'length) and (shift_num > 0) ) report "please take care about number of shifts!" severity error;	
+--	END IF;
+	
+	return outp;
+end function;
+------------------------------------------------------------------------------------------------
+--barrel left shifter
+FUNCTION blshift  ( 
+	inp : std_logic_vector; 		--low
+	shift_num :integer 	--high
+	
+) RETURN std_logic_vector is
+  
+	variable outp: std_logic_vector(inp'range);
+	variable tmp: integer range inp'range := inp'high - shift_num ;
+	
+begin
+
+FO0:FOR i IN inp'low to (inp'low + shift_num - 1)  LOOP
+		tmp := tmp +1;
+		outp(tmp) := inp(i);		
+END LOOP;
+
+tmp :=	inp'low;
+
+FO1:FOR i IN (inp'low + shift_num) to inp'high  LOOP
+
+		outp(tmp) := inp(i);
+		tmp := tmp +1;
+		
+END LOOP;
+	
+	assert ( (shift_num < inp'length) and (shift_num > 0) ) report "please take care about number of shifts!" severity error;	
+	
+return outp;
+	
+end function;
+
+------------------------------------------------------------------------------------------------
+--left shifter
+FUNCTION lshift  ( 
+	inp : std_logic_vector; 		--low
+	shift_num :integer 	--high
+	
+) RETURN std_logic_vector is
+  
+	variable outp: std_logic_vector(inp'range) := ( others=>'0');
+	variable tmp: integer range inp'range := inp'high - shift_num ;
+	
+begin
+
+tmp :=	inp'low;
+
+FO1:FOR i IN (inp'low + shift_num) to inp'high  LOOP
+
+		outp(tmp) := inp(i);
+		tmp := tmp +1;
+		
+END LOOP;
+	
+	assert ( (shift_num < inp'length) and (shift_num > 0) ) report "please take care about number of shifts!" severity error;	
+	
+return outp;
+	
+end function;
+
+
+------------------------------------------------------------------------------------------------
+
+end package body shift;
+--end with the name of allah
