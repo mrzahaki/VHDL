@@ -4,7 +4,7 @@ brief: the shift package contains functions and components that they perform sif
     
     package name: shift
    	Dependencies:     work.std_mux and std_logic_1164 and std_logic_unsigned 
-		version: vhdl 2008(important)
+	version: vhdl 2008(important)
 	
 important note: left and right directions are valid for (n downto m) descending type operations note that for ascending type range the shift directions are reversed
 		
@@ -21,14 +21,14 @@ components:
 		 
 functions:
 
-    -brshift		barrel right shifter	(note shift number must be a constant argument)(synthesizable)
-		-blshift		barrel left shifter	(note shift number must be a constant argument)(synthesizable)
+    	-brshift		barrel right shifter	(note shift number must be a constant argument)(synthesizable)
+	-blshift		barrel left shifter	(note shift number must be a constant argument)(synthesizable)
    	-lshift		normal right shift	(note shift number must be a constant argument)(synthesizable)
-		-rshift		normal right shift	(note shift number must be a constant argument)(synthesizable)
+	-rshift		normal right shift	(note shift number must be a constant argument)(synthesizable)
  
 
 useful functions:				
 
-    -gen_range				The gen_range function returns a sequence of numbers, starting from lower parameter, and increments by 1 , and stops before a specified number called higher.			
- 		-gen_blshift_array	This function produces an array in which each element shifts(with blshift) relative to the previous index.	
-		-gen_brshift_array	This function produces an array in which each element shifts(with brshift) relative to the previous index.	
+    	-gen_range				The gen_range function returns a sequence of numbers, starting from lower parameter, and increments by 1 , and stops before a specified number called higher.			
+ 	-gen_blshift_array	This function produces an array in which each element shifts(with blshift) relative to the previous index.	
+	-gen_brshift_array	This function produces an array in which each element shifts(with brshift) relative to the previous index.	
