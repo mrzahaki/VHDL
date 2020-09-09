@@ -8,10 +8,12 @@ brief: the shift package contains functions and components that they perform sif
 	
 important note: left and right directions are valid for (n downto m) descending type operations note that for ascending type range the shift directions are reversed
 		
-note: All functions and components are designed so that the number of bits in the input lines is flexible.
+Note: All functions and components are designed so that the number of bits in the input lines is flexible.
 
-note: as described above you can change the number of input line's bits with generic ports in defined components. 
+Note: as described above you can change the number of input line's bits with generic ports in defined components. 
 		
+Note: The std_mux package contains an n * n multiplexer (multiplexer with arbitrary number of inputs).
+
 components:	
 
     std_brshift	standard barrel right shifter		(note shift number can be a variable argument)(synthesizable)
