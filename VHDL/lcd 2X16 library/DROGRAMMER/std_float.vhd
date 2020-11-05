@@ -34,7 +34,7 @@
 --					fnormalization		floating point normalizer 	(used for convert Non-standard floating-point numbers to it's standard representation ) (important)
 --					frounding			floating point rounder		(used for convert Non-standard floating-point numbers to it's standard representation )	(important)
 --					to_vector			it's convert real number to vector TYPE
---					to_float			it's convert real vector  to real number 
+--					to_real			it's convert real vector  to real number 
 ---					dec2vect			it's convert decimal part of floating-point number to vector TYPE
 --					norm_dec2vect		it's convert decimal part of floating-point number to vector TYPE(normalized output)
 --					dec_size            it's calculate size of represented vector for  decimal part of floating-point number 
@@ -94,6 +94,8 @@ subtype singlePrecision_type is STD_LOGIC_VECTOR(singlePrecision_SignificandWidt
 constant doublePrecision_SignificandWidth: INTEGER := 52;
 constant doublePrecision_ExponentWidth: INTEGER := 11;
 subtype doublePrecision_type is STD_LOGIC_VECTOR(doublePrecision_SignificandWidth + doublePrecision_ExponentWidth+1 downto 1 );
+TYPE DOUBLEPRECISION_ARRAY  IS  ARRAY(NATURAL RANGE <>) OF  STD_LOGIC_VECTOR( doublePrecision_SignificandWidth + doublePrecision_ExponentWidth+1 downto 1);
+
 
 constant quadruplePrecision_SignificandWidth: INTEGER := 113;
 constant quadruplePrecision_ExponentWidth: INTEGER := 15;
@@ -135,6 +137,28 @@ port(
 	outp			:out STD_LOGIC_VECTOR( (float_typedef(1) + float_typedef(2) + 1) downto 1)--defined in std_arith.vhd
 );
 end component;
+-----------------------------------------
+constant opcode_adder 			:STD_LOGIC_VECTOR(2 DOWNTO 1) := "00";
+constant opcode_subtracter  	:STD_LOGIC_VECTOR(2 DOWNTO 1) := "01";
+constant opcode_multiplier  	:STD_LOGIC_VECTOR(2 DOWNTO 1) := "10";
+
+component float_alu 
+generic (
+float_typedef :float_type := float_single_precision
+);
+port(
+	clk		 				: in  STD_LOGIC;
+	nrst		 			: in  STD_LOGIC;
+	opcode					: in  STD_LOGIC_VECTOR(2 DOWNTO 1);
+	
+	inp_ready				: out  STD_LOGIC := '0'; 
+	inp_vld					: in  STD_LOGIC := '0'; 
+	inp0_data, inp1_data	: in  STD_LOGIC_VECTOR( (float_typedef(1) + float_typedef(2) + 1) downto 1);--defined in std_arith.vhd
+	
+	outp_ready				: out STD_LOGIC := '0';--status 
+	outp_data				: out STD_LOGIC_VECTOR( (float_typedef(1) + float_typedef(2) + 1) downto 1) := (others=>'0') --defined in std_arith.vhd
+);
+end component float_alu;
 --------------------------------------------------------------------------------------inner components
 function frounding (
 	input						: STD_LOGIC_VECTOR;
@@ -164,8 +188,23 @@ FUNCTION unaryor( inp : STD_LOGIC_VECTOR  ) RETURN STD_LOGIC;
 FUNCTION vect_bias( float_typedef :float_type  ) RETURN STD_LOGIC_VECTOR;
 FUNCTION int_bias( float_typedef :float_type  ) RETURN INTEGER;
 
-FUNCTION to_vector( inp : real; float_typedef : float_type ) RETURN STD_LOGIC_VECTOR;
-FUNCTION to_float( inp : STD_LOGIC_VECTOR; constant float_typedef : float_type  ) RETURN real;
+FUNCTION to_vector( inp : real; constant float_typedef : float_type  ) RETURN STD_LOGIC_VECTOR ;
+FUNCTION to_real( inp : STD_LOGIC_VECTOR; constant float_typedef : float_type  ) RETURN real;
+FUNCTION to_float( inp : STD_LOGIC_VECTOR;  sign : STD_LOGIC; constant float_typedef : float_type  ) RETURN STD_LOGIC_VECTOR ;
+FUNCTION to_float( inp : INTEGER;  constant float_typedef : float_type  ) RETURN STD_LOGIC_VECTOR;
+FUNCTION to_integer( inp : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN INTEGER;
+FUNCTION gt( l : STD_LOGIC_VECTOR; r : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN BOOLEAN ;
+FUNCTION lt( l : STD_LOGIC_VECTOR; r : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN BOOLEAN ;
+FUNCTION lt( l : INTEGER; r : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN BOOLEAN ;
+FUNCTION gt( l : INTEGER; r : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN BOOLEAN ;
+FUNCTION gt( l : STD_LOGIC_VECTOR; r : INTEGER;  constant float_typedef : float_type  ) RETURN BOOLEAN ;
+FUNCTION lt( l : STD_LOGIC_VECTOR; r : INTEGER;  constant float_typedef : float_type  ) RETURN BOOLEAN ;
+FUNCTION SET_ZERO(len:INTEGER) RETURN DOUBLEPRECISION_ARRAY ;
+-- FUNCTION to_singlePrecision_type( inp : STD_LOGIC_VECTOR  ) RETURN singlePrecision_type;
+-- FUNCTION to_doublePrecision_type( inp : STD_LOGIC_VECTOR  ) RETURN doublePrecision_type;
+-- FUNCTION to_quadruplePrecision_type ( inp : STD_LOGIC_VECTOR ) RETURN quadruplePrecision_type;
+-- FUNCTION to_octuplePrecision_type( inp : STD_LOGIC_VECTOR  ) RETURN octuplePrecision_type;
+
 
 FUNCTION dec2vect( dec : real   ) RETURN STD_LOGIC_VECTOR;
 FUNCTION norm_dec2vect( dec : real; constant float_typedef : float_type )  RETURN STD_LOGIC_VECTOR;
@@ -178,6 +217,17 @@ end std_float;
 package body std_float is
 
 ------------------------------------------------------------------------------
+  FUNCTION SET_ZERO(len:INTEGER) RETURN DOUBLEPRECISION_ARRAY IS
+  
+  variable res: DOUBLEPRECISION_ARRAY(1 TO len);
+  
+  BEGIN
+	for i in res'range loop
+		res(i) := (others=>'0'); 
+	end loop;
+	RETURN res;
+  END FUNCTION;
+ ---------------------------------------------------------------------------
 FUNCTION reverse( l : real ) RETURN real is
 begin
 	return (1.0/l);
@@ -408,6 +458,7 @@ begin
 	
 return tmp;	
 end function;	
+
 ------------------------------------------------------------------------------
 --floating point sinificand rounding
 -- input format: [actual sinificand,(downto) additional bits] 
@@ -484,10 +535,79 @@ begin
 	
 	
 end function;	
+----------------------------------------------------------------------------------------
+FUNCTION to_float( inp : STD_LOGIC_VECTOR;  sign : STD_LOGIC; constant float_typedef : float_type  ) RETURN STD_LOGIC_VECTOR IS
+	--seprating INTEGER and real part
+	
+constant exponent_width :INTEGER := float_typedef(1);
+constant significand_width :INTEGER := float_typedef(2);
+	
+--variable int_part :INTEGER :=  to_integer(inp);
+--variable dec_part :real := absolute(inp) - absolute(real(int_part)) ;
+--variable vect_real_part : STD_LOGIC_VECTOR( dec_size(dec_part) downto 1 );
+variable sign_bit : STD_LOGIC := sign;
+
+variable significand_vect, significand_out  : STD_LOGIC_VECTOR( 1 to significand_width) := (others=> '0');
+
+variable cntr	: INTEGER RANGE -1 to significand_width+2;
+
+begin
+	if (inp = '0') then
+		return  STD_LOGIC_VECTOR( to_unsigned(0, exponent_width + significand_width + 1 ) );
+	end if;
+	
+	if ( inp'length < significand_width ) then 
+	
+		significand_vect(1 to inp'length) :=  inp ;
+			
+	else 
+		significand_vect :=  inp(inp'HIGH DOWNTO inp'HIGH-significand_width+1) ;
+		
+	end if;
+	
+	
+	significand_out := significand_vect;
+	cntr := 1;
+		LOOP0:while cntr < significand_width+1 loop 	
+		
+			significand_out := STD_LOGIC_VECTOR( shift_left(unsigned(significand_out),	1 ) );
+			
+			exit when (significand_vect( cntr ) = '1');
+			
+			cntr := cntr + 1;
+		end loop;
+		
+		-- LOOP0:for  i in 1 to significand_width loop 	
+		
+			-- significand_out := STD_LOGIC_VECTOR( shift_left(unsigned(significand_out),	1 ) );
+			
+			-- exit when (significand_vect( i ) = '1');
+
+		-- end loop;
+	
+	return sign_bit & STD_LOGIC_VECTOR( to_unsigned( int_bias(float_typedef) + inp'length -cntr , exponent_width ) )  & significand_out;
+
+	
+	
+end function;
+----------------------------------------------------------------------------------------
+FUNCTION to_float( inp : INTEGER;  constant float_typedef : float_type  ) RETURN STD_LOGIC_VECTOR IS
+
+constant significand_width :INTEGER := float_typedef(2);
+
+begin
+
+if(inp>0) then
+	RETURN to_float(STD_LOGIC_VECTOR( to_unsigned( inp, significand_width )), '0', float_typedef);
+else
+	RETURN to_float(STD_LOGIC_VECTOR( to_unsigned( inp, significand_width )), '1', float_typedef);
+end if;
+	
+end function;
 ------------------------------------------------------------------------------
 --the inp must be normalized
 --note real TYPE just suitable for single precision float TYPE 
-FUNCTION to_float( inp : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN real is
+FUNCTION to_real( inp : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN real is
 	--seprating INTEGER and real part
 	
 constant exponent_width :INTEGER := float_typedef(1);
@@ -497,7 +617,6 @@ variable fx			:STD_LOGIC_VECTOR(significand_width downto 1) := inp( significand_
 variable expx 		:STD_LOGIC_VECTOR(exponent_width downto 1) := inp( (significand_width + exponent_width) downto (significand_width + 1) ) ;
 constant bias_value: INTEGER := int_bias(float_typedef);
 
-variable result : real;
 
 begin
 
@@ -507,6 +626,162 @@ else
 	return  vect2dec(fx) * 2**( real(to_integer(unsigned(expx)) - bias_value) );
 end if;	
 end function;
+------------------------------------------------------------------------------
+--floating point decimal part to inteegr
+FUNCTION gt( l : STD_LOGIC_VECTOR; r : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN BOOLEAN is
+
+constant exponent_width :INTEGER := float_typedef(1);
+constant significand_width :INTEGER := float_typedef(2);
+
+
+variable lfx			:UNSIGNED(significand_width downto 1) := unsigned(l( significand_width  downto 1 ));
+variable rfx			:UNSIGNED(significand_width downto 1) := unsigned(r( significand_width  downto 1 ));
+--variable fx			:INTEGER := to_integer( unsigned(inp( significand_width  downto 1 )) );
+variable lexpx 		:UNSIGNED(exponent_width downto 1) := unsigned(l( (significand_width + exponent_width) downto (significand_width + 1) )) ;
+variable rexpx 		:UNSIGNED(exponent_width downto 1) := unsigned(r( (significand_width + exponent_width) downto (significand_width + 1) )) ;
+constant bias_value: INTEGER := int_bias(float_typedef);
+
+
+variable cntr : INTEGER;
+
+begin
+	if(l(l'high) = r(r'high)) then 
+		if(lexpx = rexpx) then 
+			cntr := 1;
+			LOOP0:while cntr < significand_width+1 loop 
+				exit when (cntr = to_integer(lexpx) - bias_value+1);
+				lfx :=  shift_left(lfx,	1 ) ;
+				cntr := cntr + 1;
+			end loop;
+			lfx(lfx'high) := '1';
+			
+			cntr := 1;
+			LOOP1:while cntr < significand_width+1 loop 
+				exit when (cntr = to_integer(rexpx) - bias_value+1);
+				rfx :=  shift_left(rfx,	1 ) ;
+				cntr := cntr + 1;
+			end loop;
+			rfx(rfx'high) := '1';
+			
+			if(lfx > rfx) then return true;
+			else return false;
+			end if;
+		
+		elsif(lexpx> rexpx)then
+			return true;
+		else
+			return false;
+		end if;
+	elsif(l(l'high) = '0') then
+		return true;
+	else
+		return false;
+	end if;
+	
+
+
+
+end function;
+------------------------------------------------------------------------------
+--floating point decimal part to inteegr
+FUNCTION lt( l : STD_LOGIC_VECTOR; r : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN BOOLEAN is
+
+begin
+
+ return not gt(l, r, float_typedef);
+
+end FUNCTION ;
+------------------------------------------------------------------------------
+FUNCTION lt( l : INTEGER; r : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN BOOLEAN is
+	constant exponent_width :INTEGER := float_typedef(1);
+	constant significand_width :INTEGER := float_typedef(2);
+	variable f0 : STD_LOGIC_VECTOR(significand_width+exponent_width+1 downto 1); 
+begin
+	f0 :=  to_float(l,float_typedef );
+	return not gt(f0 , r, float_typedef);
+
+end FUNCTION;
+------------------------------------------------------------------------------
+FUNCTION gt( l : INTEGER; r : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN BOOLEAN is
+
+	constant exponent_width :INTEGER := float_typedef(1);
+	constant significand_width :INTEGER := float_typedef(2);
+	variable f0 : STD_LOGIC_VECTOR(significand_width+exponent_width+1 downto 1); 
+begin
+	f0 :=  to_float(l,float_typedef );
+	return  gt(f0 , r, float_typedef);
+end FUNCTION;
+------------------------------------------------------------------------------
+FUNCTION gt( l : STD_LOGIC_VECTOR; r : INTEGER;  constant float_typedef : float_type  ) RETURN BOOLEAN is
+begin
+return  lt(r, l, float_typedef);
+end FUNCTION;
+----------------------------------------------------------------------------
+FUNCTION lt( l : STD_LOGIC_VECTOR; r : INTEGER;  constant float_typedef : float_type  ) RETURN BOOLEAN is
+begin
+return  gt(r, l, float_typedef);
+end FUNCTION;
+------------------------------------------------------------------------------
+--the inp must be normalized
+--note real TYPE just suitable for single precision float TYPE 
+FUNCTION to_integer( inp : STD_LOGIC_VECTOR;  constant float_typedef : float_type  ) RETURN INTEGER is
+	--seprating INTEGER and real part
+	
+constant exponent_width :INTEGER := float_typedef(1);
+constant significand_width :INTEGER := float_typedef(2);
+
+variable fx			:UNSIGNED(significand_width+1 downto 1) := unsigned('1'&inp( significand_width  downto 1 ));
+--variable fx			:INTEGER := to_integer( unsigned(inp( significand_width  downto 1 )) );
+variable expx 		:UNSIGNED(exponent_width downto 1) := unsigned(inp( (significand_width + exponent_width) downto (significand_width + 1) )) ;
+constant bias_value: INTEGER := int_bias(float_typedef);
+
+variable cntr : INTEGER;
+
+begin
+	cntr := 1;
+	LOOP0:while cntr < significand_width+1 loop 
+		exit when (cntr = significand_width + 1 - to_integer(expx) + bias_value);
+		fx :=  shift_right(fx,	1 ) ;
+		cntr := cntr + 1;
+	end loop;
+	
+if(inp(inp'high) = '1') then
+		return (-1)*to_integer(fx);
+else		
+	return to_integer(fx);
+		
+end if;	
+end function;
+------------------------------------------------------------------------------
+-- FUNCTION to_octuplePrecision_type( inp : STD_LOGIC_VECTOR  ) RETURN octuplePrecision_type is
+	-- --res : STD_LOGIC_VECTOR;
+-- begin
+	-- --res <= inp;
+	-- return inp;
+-- end function;
+-- ------------------------------------------------------------------------------
+-- FUNCTION to_quadruplePrecision_type ( inp : STD_LOGIC_VECTOR ) RETURN quadruplePrecision_type is
+	-- --seprating INTEGER and real part
+-- begin
+	-- return inp;
+
+-- end function;
+-- ------------------------------------------------------------------------------
+-- FUNCTION to_doublePrecision_type( inp : STD_LOGIC_VECTOR  ) RETURN doublePrecision_type is
+	-- --seprating INTEGER and real part
+-- begin
+	-- return inp;
+
+-- end function;
+-- ------------------------------------------------------------------------------
+-- FUNCTION to_singlePrecision_type( inp : STD_LOGIC_VECTOR  ) RETURN singlePrecision_type is
+	-- --seprating INTEGER and real part
+-- begin
+	-- return inp;
+
+-- end function;
+------------------------------------------------------------------------------
+
 ------------------------------------------------------------------------------
 --floating point sinificand normalization
 --output format => [normalized exponent(input exponent width), normalized sinificand(input sinificand width-1)] => example significand: "1001001001"(without normalization'1' bit)
@@ -548,6 +823,12 @@ begin
 			significand_out := STD_LOGIC_VECTOR( shift_left(unsigned(significand_out),	1 ) );
 			cntr := cntr + 1;
 		end loop;
+
+		-- LOOP0:for i in 1 to significand_width loop 
+			-- exit when (significand_out( significand_width +1 ) = '1');
+			-- significand_out := STD_LOGIC_VECTOR( shift_left(unsigned(significand_out),	1 ) );
+			
+		-- end loop;
 		final_exp := final_exp - cntr;
 	end if;
 	
@@ -705,4 +986,138 @@ begin
 
 
 end structural;
+--------------------------------------------------------------------
+--format:
+--MSB  [sign], [float_type(1): exponent], [float_type(2): sinificant]		LSB
+--inputs must be normalized
 
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+use work.std_float.all;
+--sub sign magnitude adder
+--0 ADDITION
+--1 SUBTRACTION => inp0_data-inp1_data
+--2 MULTIPLICTION
+entity float_alu is 
+generic (
+float_typedef :float_type := float_single_precision
+);
+port(
+	clk		 				: in  STD_LOGIC;
+	nrst		 			: in  STD_LOGIC;
+	opcode					: in  STD_LOGIC_VECTOR(2 DOWNTO 1);
+	
+	inp_ready				: out  STD_LOGIC := '0'; 
+	inp_vld					: in  STD_LOGIC := '0'; 
+	inp0_data, inp1_data	: in  STD_LOGIC_VECTOR( (float_typedef(1) + float_typedef(2) + 1) downto 1);--defined in std_arith.vhd
+	
+	outp_ready				: out STD_LOGIC := '0';--status 
+	outp_data				: out STD_LOGIC_VECTOR( (float_typedef(1) + float_typedef(2) + 1) downto 1) := (others=>'0') --defined in std_arith.vhd
+);
+end float_alu;
+
+architecture structural of float_alu is
+TYPE ALU_STATE IS (input_state, computing, ouput_state);
+
+SIGNAL mstate : ALU_STATE;
+
+
+
+constant exponent_width 		:INTEGER := float_typedef(1);
+constant significand_width  	:INTEGER := float_typedef(2);
+
+
+SIGNAL data0_buffer :STD_LOGIC_VECTOR(inp0_data'length downto 1):= (others=>'0');
+SIGNAL data1_buffer :STD_LOGIC_VECTOR(inp1_data'length downto 1) := (others=>'0');
+SIGNAL opcode_buffer :STD_LOGIC_VECTOR(opcode'RANGE) := (OTHERS=>'0');
+
+
+SIGNAL	add0, add1, add_o	: STD_LOGIC_VECTOR( (exponent_width + significand_width + 1) downto 1):= (others=>'0');
+SIGNAL	mul0, mul1, mul_o	: STD_LOGIC_VECTOR( (exponent_width + significand_width + 1) downto 1):= (others=>'0');
+
+
+alias data0_sign	:STD_LOGIC is data0_buffer(data0_buffer'high);
+alias data1_sign	:STD_LOGIC is data1_buffer(data1_buffer'high);
+
+begin
+
+---------------------------------------------------------------section1 exponent processing
+	
+	FA0:fadder	generic map(	float_typedef )	port map(add0, add1, add_o);
+
+	
+	FA1:fmul	generic map(	float_typedef )	port map(mul0, mul1, mul_o	);
+	
+
+---------------------------------------------
+  PROCESS(clk)
+	--event counter for timing
+	variable backup_inp_vld : std_logic:='0'; 
+  BEGIN
+    BIGIF:IF(  (clk'event and clk='1')  ) THEN
+		CASE mstate IS
+			
+		WHEN input_state=>
+				outp_ready <= '0'; 
+				inp_ready  <= '1';
+				mstate <= input_state;
+					if(  (backup_inp_vld /= inp_vld)  and  inp_vld = '1') then--racing edge of input valid
+						data0_buffer  <= inp0_data;
+						data1_buffer  <= inp1_data;
+						opcode_buffer <=  opcode;
+						
+						inp_ready  <= '0';
+						
+						mstate <= computing;
+				end if;
+				
+				backup_inp_vld:=inp_vld;
+		WHEN computing=>
+				IF(opcode_buffer = opcode_adder) THEN
+					add1 <= data1_buffer;
+					add0 <= data0_buffer;
+					mstate <= ouput_state;
+					
+				ELSIF(opcode_buffer = opcode_subtracter) THEN
+					add1 <= (data1_sign xor '1') & data1_buffer(data1_buffer'high-1 downto 1);
+					add0 <= (data0_sign xor '1') & data0_buffer(data1_buffer'high-1 downto 1);
+					mstate <= ouput_state;
+					
+				ELSIF(opcode_buffer = opcode_multiplier) THEN
+					mul1 <= data1_buffer;
+					mul0 <= data0_buffer;
+					mstate <= ouput_state;
+					
+				END IF;
+				
+		WHEN ouput_state=>
+				outp_ready <= '1';
+				IF(opcode_buffer = opcode_multiplier) THEN
+					outp_data <= mul_o;
+				ELSE
+					outp_data <= add_o;
+				END IF;
+				mstate <= input_state;
+				
+		END CASE;
+		
+		if(nrst = '0') then
+			data0_buffer  <= (others=>'0');
+			data1_buffer  <= (others=>'0');
+			opcode_buffer <=  (others=>'0');
+			
+			outp_ready <= '0'; 
+			mstate <= input_state;
+		end if;
+		
+		
+    END IF BIGIF;
+	
+  END PROCESS;
+
+---------------------------------------------------------------section3 normalization process
+
+
+end structural;

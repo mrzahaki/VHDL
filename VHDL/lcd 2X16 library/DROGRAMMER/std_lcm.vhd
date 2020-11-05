@@ -30,7 +30,7 @@
 --					to_std_logic		(Internal usage)
 --					delay_us			(Internal usage)
 --					delay_ms			(Internal usage)
----					udelay_machine		(Internal usage)
+---					udelay_machine_serial_serial_serial_serial		(Internal usage)
 --					vector_event		(Internal usage)
 
 -- 
@@ -48,10 +48,9 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use ieee.numeric_std.all; 
-use ieee.MATH_REAL.all; 
-use work.std_arith.all;
-
-
+--use ieee.MATH_REAL.all; 
+use work.std_delay.all;
+use work.std_type.all;
 
 
  
@@ -59,15 +58,33 @@ package std_lcm is
 
 --maximus number of @UI_PROCEDURES 
 CONSTANT MAX_WORK_LIST_LENGTH : INTEGER := 50;
+CONSTANT MAX_SUBWORK_LENGTH : INTEGER := 50;--SENDING STRING and loop form
 --with this TYPE you can define seed object
 SUBTYPE SEED_TYPEDEF is INTEGER range 0 to MAX_WORK_LIST_LENGTH;
+SUBTYPE SUBSEED_TYPEDEF is INTEGER range 0 to MAX_SUBWORK_LENGTH;
 
 --------------------------------------------------------------------------------(internal usage)
-SHARED VARIABLE impure_cntr: SEED_TYPEDEF := 0;---------------------------------(internal usage)
-SHARED VARIABLE impure_backup_flag: STD_LOGIC_VECTOR(1 to 3) := (others=>'1');--(internal usage)
-SHARED VARIABLE impure_delay_cntr :NATURAL := 0;--------------------------------(internal usage)
+TYPE SHARED_LCM_TYPE IS RECORD
+impure_cntr: SEED_TYPEDEF;
+impure_backup_flag: STD_LOGIC_VECTOR(1 to 4);
+impure_delay_cntr : NATURAL;
+impure_subseed_counter :SUBSEED_TYPEDEF;
+END RECORD;
+
+SHARED  VARIABLE shared_block : SHARED_LCM_TYPE :=(
+								impure_cntr	=>0,
+								impure_backup_flag =>(others=>'1'),
+								impure_delay_cntr =>0,
+								impure_subseed_counter =>0
+								);
+
+-- SHARED  VARIABLE shared_block.impure_cntr: SEED_TYPEDEF := 0;---------------------------------(internal usage)
+-- SHARED  VARIABLE shared_block.impure_backup_flag: STD_LOGIC_VECTOR(1 to 4) := (others=>'1');--(internal usage)
+-- SHARED  VARIABLE shared_block.impure_delay_cntr : NATURAL := 0;--------------------------------(internal usage)
+-- SHARED  VARIABLE  shared_block.impure_subseed_counter :SUBSEED_TYPEDEF := 0;
 --------------------------------------------------------------------------------(internal usage)
 --main types used to communicate with lcd
+
 SUBTYPE LCM_I8080_DATATYPE	is STD_LOGIC_VECTOR(8 downto 1);
 --LCM_COM_DATATYPE foormat : (msb) lcd enable, read/write, data/setup pin
 SUBTYPE LCM_COM_DATATYPE	is STD_LOGIC_VECTOR(3 downto 1);
@@ -78,7 +95,7 @@ SUBTYPE LCM_BUS_TYPE	is STD_LOGIC_VECTOR(12 downto 1);
 SUBTYPE lcm_bus_datatype	is STD_LOGIC_VECTOR(8 downto 1);
 --see @initialization_constants
 SUBTYPE lcm_bus_modetype	is STD_LOGIC_VECTOR(3 downto 1);
-TYPE boolean_vector	is array(NATURAL range<>) of BOOLEAN;
+--TYPE boolean_vector	is array(NATURAL range<>) of BOOLEAN;--vhdl 2008
 -------------------------------------------------------------(internal usage)
 
 
@@ -146,12 +163,11 @@ CONSTANT LCD_CMD_8BIT_2ROW_5X7             : LCM_I8080_DATATYPE := x"38";
 
 -------------------------------------------------------------------functions
 -- mid level section
-IMPURE FUNCTION seed_breeding(nencom:STD_LOGIC; works_number:INTEGER; CONSTANT loop_form : BOOLEAN := false ) RETURN SEED_TYPEDEF ;
+impure FUNCTION seed_breeding(nencom:STD_LOGIC;  nrst:STD_LOGIC; works_number:INTEGER; reset_offset:INTEGER;   loop_form : BOOLEAN := false ) RETURN SEED_TYPEDEF ;
 FUNCTION to_std_logic(  l: INTEGER ) RETURN STD_LOGIC;
-FUNCTION delay_us(CONSTANT clk_freq : INTEGER; clk_count : INTEGER; delay: INTEGER  ) RETURN BOOLEAN ;
-FUNCTION delay_ms(  CONSTANT clk_freq : INTEGER; clk_count : INTEGER; delay: INTEGER  ) RETURN BOOLEAN;
-FUNCTION udelay_machine(CONSTANT clk_freq : NATURAL; clk_count : NATURAL; delays: integer_vector  ) RETURN boolean_vector;
 FUNCTION vector_event( vect : STD_LOGIC_VECTOR; backup_vect : STD_LOGIC_VECTOR  ) RETURN STD_LOGIC;
+FUNCTION vector_event( vect : BOOLEAN_VECTOR; backup_vect : BOOLEAN_VECTOR  ) RETURN STD_LOGIC;
+
 --------------------------------------------------------------------@UI_PROCEDURES 
 -- high level section
 
@@ -237,8 +253,16 @@ PROCEDURE lcm_delay (
 	enable					:in BOOLEAN; --edge =  1 racing edge
 	CONSTANT work_id 		:in INTEGER
 );    
-		
+
+ PROCEDURE subseed_breeding (
+	SIGNAL  nencom			: in  STD_LOGIC;	--control main com buss
+	preseed					: in  SEED_TYPEDEF;
+	CONSTANT work_id 		:in INTEGER;
 	
+	newseed					: out  SUBSEED_TYPEDEF;
+	works_number			:in INTEGER
+	);		
+
 	
 --------------------------------------------------------------------components
 -- low level section
@@ -277,4 +301,350 @@ END component;
 
 end std_lcm;
 
+
+--------------------------------------------------------------------------------
+--					in the name of allah
+--
+--
+--		designer: 			hussein zahaki
+--		library name : 		DROGRAMMER	
+--   	FileName:         	std_lcm_body.vhd
+--   	Dependencies:     	std_lcm.vhdl(see it)
+--		version: vhdl 2008(important)
+--------------------------------------------------------------------------------
+PACKAGE BODY STD_LCM IS
+
+--must be called in inifinite loop(process with clock)
+  PROCEDURE lcm_init (
+	nencom					: in  STD_LOGIC;	--control main com buss
+    SIGNAL machine_com 		: out  LCM_BUS_TYPE; --LCD main com bus
+	seed					: in  SEED_TYPEDEF;
+
+	shift_cntrol 			: in LCM_INIT_TYPEDEF; --parameters of initialization
+	cursor_blink_control	: in LCM_INIT_TYPEDEF;
+	lines_size_control		: in LCM_INIT_TYPEDEF;
+	CONSTANT work_id 		: in INTEGER
+    ) is
+	
+	CONSTANT bus_isready :STD_LOGIC:= '0';
+	CONSTANT bus_isbusy :STD_LOGIC:= '1';
+  begin
+	IF(seed = work_id) then
+		IF(nencom = bus_isready) then
+			--write on bus from 
+			machine_com <= shared_block.impure_backup_flag(2)&"00"&shift_cntrol& cursor_blink_control& lines_size_control & LCD_BUS_INIT_MODE;
+		END IF;
+	END IF;
+	
+  END PROCEDURE lcm_init;
+  ---------------------------------------- 
+    PROCEDURE lcm_character (
+	nencom					: in  STD_LOGIC;	--control main com buss
+    SIGNAL machine_com 		: out  LCM_BUS_TYPE; --LCD main com bus
+	seed					: in  SEED_TYPEDEF;
+	--param format: [MSB][shift_cntrol, display_cursor_blink, display_lines_size][LSB]
+	param 				: in character; --parameters of initialization
+	CONSTANT work_id 		:in INTEGER
+    
+	) is
+	CONSTANT bus_isready :STD_LOGIC:= '0';
+	CONSTANT bus_isbusy :STD_LOGIC:= '1';
+  begin
+	IF(seed = work_id) then	
+		IF(nencom = bus_isready) then
+			--write on bus from 
+			machine_com <= shared_block.impure_backup_flag(1) & STD_LOGIC_VECTOR( to_unsigned( character'pos(param),  LCM_I8080_DATATYPE'length) ) & LCD_BUS_DATA_MODE;
+	END IF;
+	END IF;
+	
+  END PROCEDURE lcm_character;
+   ---------------------------------------- 
+    PROCEDURE lcm_instruction (
+	SIGNAL  nencom			: in  STD_LOGIC;	--control main com buss
+    SIGNAL machine_com 		: out  LCM_BUS_TYPE; --LCD main com bus
+	seed					: in  SEED_TYPEDEF;
+	--param instruction see @instruction in std_lcm
+	param 				: in LCM_I8080_DATATYPE; --parameters of initialization
+    CONSTANT work_id 		:in INTEGER
+	) is
+	CONSTANT bus_isready :STD_LOGIC:= '0';
+	CONSTANT bus_isbusy :STD_LOGIC:= '1';
+  begin
+  
+	IF(seed = work_id) then
+		IF(nencom = bus_isready) then
+		--write on bus from 
+		machine_com <= shared_block.impure_backup_flag(2) & param & LCD_BUS_INSTRUCTION_MODE;
+	END IF;
+	END IF;
+	
+  END PROCEDURE lcm_instruction;
+     ---------------------------------------- 
+    PROCEDURE lcm_instruction (
+	SIGNAL  nencom			: in  STD_LOGIC;	--control main com buss
+    SIGNAL machine_com 		: out  LCM_BUS_TYPE; --LCD main com bus
+	--param instruction see @instruction in std_lcm
+	param 				: in LCM_I8080_DATATYPE --parameters of initialization
+	) is
+	CONSTANT bus_isready :STD_LOGIC:= '0';
+	CONSTANT bus_isbusy :STD_LOGIC:= '1';
+  begin
+  
+		IF(nencom = bus_isready) then
+		--write on bus from 
+		machine_com <= shared_block.impure_backup_flag(2) & param & LCD_BUS_INSTRUCTION_MODE;
+	END IF;
+	
+  END PROCEDURE lcm_instruction;
+   ---------------------------------------- 
+    PROCEDURE lcm_gotoxy (
+	SIGNAL  nencom			: in  STD_LOGIC;	--control main com buss
+    SIGNAL machine_com 		: out  LCM_BUS_TYPE; --LCD main com bus
+	seed					: in  SEED_TYPEDEF;
+	--param instruction see @instruction in std_lcm
+	x_coordinate 				: in INTEGER range 0 to 15; --parameters of initialization
+	y_coordinate 				: in INTEGER range 0 to 1; --parameters of initialization
+    CONSTANT work_id 		:in INTEGER
+	) is
+	CONSTANT bus_isready :STD_LOGIC:= '0';
+	CONSTANT bus_isbusy :STD_LOGIC:= '1';
+  begin
+  
+	IF(seed = work_id) then
+		--write on bus from 
+		lcm_instruction(nencom, machine_com, '1' & to_std_logic(y_coordinate) & "00"& STD_LOGIC_VECTOR( to_unsigned(x_coordinate, 4)));
+	END IF;
+	
+  END PROCEDURE lcm_gotoxy;
+   ---------------------------------------- 
+   
+    PROCEDURE lcm_string (
+	SIGNAL  nencom			: in  STD_LOGIC;	--control main com buss
+    SIGNAL machine_com 		: out  LCM_BUS_TYPE; --LCD main com bus
+	seed					: in  SEED_TYPEDEF;
+	--param format: string
+	param 				: in string; --parameters of initialization
+	CONSTANT work_id 		:in INTEGER
+    
+	) is
+	CONSTANT bus_isready :STD_LOGIC:= '0';
+	CONSTANT bus_isbusy :STD_LOGIC:= '1';
+  begin
+	IF(seed = work_id) then	
+		IF(shared_block.impure_backup_flag(2) /= nencom and nencom = bus_isready) then
+			--write on bus from 
+			shared_block.impure_backup_flag(2) := nencom;
+			shared_block.impure_delay_cntr := shared_block.impure_delay_cntr +1;
+			machine_com <= to_std_logic(shared_block.impure_delay_cntr mod 2) & STD_LOGIC_VECTOR( to_unsigned( character'pos(param(shared_block.impure_delay_cntr)),  LCM_I8080_DATATYPE'length) ) & LCD_BUS_DATA_MODE;
+			IF(shared_block.impure_delay_cntr+1 > param'length) then
+				shared_block.impure_delay_cntr := 0 ;
+			END IF;
+			
+		else 
+			shared_block.impure_backup_flag(2) := nencom;
+		END IF;
+	END IF;
+  END PROCEDURE lcm_string;
+     ---------------------------------------- 
+   
+    PROCEDURE lcm_delay (
+	SIGNAL  nencom			: in  STD_LOGIC;	--control main com buss
+	SIGNAL machine_com 		: out  LCM_BUS_TYPE; --LCD main com bus
+	seed					: in  SEED_TYPEDEF;
+	--enable signal used to call other sub programs or components during idle time 
+	-- enable = '0' => lcm operations is suspended, and we can do another operation during delay time 
+	SIGNAL enable			:out STD_LOGIC;
+	delay					:in INTEGER;
+	clk_freq 				:in	INTEGER;
+	CONSTANT work_id 		:in INTEGER
+    
+	) is
+	CONSTANT bus_isready :STD_LOGIC:= '0';
+
+  begin
+	IF(seed = work_id) then	
+		
+		
+		IF(not delay_ms(clk_freq, shared_block.impure_delay_cntr, delay) and nencom =  bus_isready)then 
+			machine_com(lcm_bus_modetype'high downto lcm_bus_modetype'low) <= LCD_BUS_DELAY_MODE;
+			shared_block.impure_delay_cntr := 0; 
+			shared_block.impure_backup_flag(3) := '0';
+			enable <= '1';
+		elsif(shared_block.impure_backup_flag(3) = '1')  then 
+			shared_block.impure_delay_cntr := shared_block.impure_delay_cntr + 1;
+			enable <= '0';
+		END IF;
+		
+	END IF;
+  END PROCEDURE lcm_delay;
+  ---------------------------------------- 
+   --wait for event on signal
+   PROCEDURE lcm_wait_for (
+		SIGNAL  nencom			: in  STD_LOGIC;	--control main com buss
+		SIGNAL machine_com 	: out  LCM_BUS_TYPE; --LCD main com bus
+		seed						: in  SEED_TYPEDEF;
+		enable					:in BOOLEAN; --edge =  1 racing edge
+		CONSTANT work_id 		:in INTEGER
+		
+	) is
+	CONSTANT bus_isready :STD_LOGIC:= '0';
+
+  begin
+	IF(seed = work_id) then	
+	
+	
+		IF(enable and nencom = bus_isready ) then
+
+			machine_com(lcm_bus_modetype'high downto lcm_bus_modetype'low) <= LCD_BUS_DELAY_MODE;
+
+		END IF;
+		
+	END IF;
+  END PROCEDURE lcm_wait_for;
+
+----------------------------------------
+
+impure FUNCTION seed_breeding(nencom:STD_LOGIC;  nrst:STD_LOGIC; works_number:INTEGER; reset_offset:INTEGER;   loop_form : BOOLEAN := false ) RETURN SEED_TYPEDEF is
+	CONSTANT bus_isready :STD_LOGIC:= '0';
+begin
+	
+	IF(shared_block.impure_backup_flag(1) /= nencom and nencom = bus_isready and shared_block.impure_delay_cntr = 0 and shared_block.impure_subseed_counter = 0) then	--event detection
+		shared_block.impure_backup_flag(1) := nencom;
+
+			shared_block.impure_cntr := shared_block.impure_cntr + 1;
+			shared_block.impure_backup_flag(3) := '1';--lcm_delay backup must be flushed
+		
+	else 
+		shared_block.impure_backup_flag(1) := nencom;
+	END IF;
+	
+	IF(nrst = '0') THEN
+         shared_block.impure_cntr := 0;
+		 shared_block.impure_subseed_counter := 0;
+		shared_block.impure_delay_cntr := 0;
+		shared_block.impure_backup_flag := (others=>'1');	
+		
+	ELSIF(shared_block.impure_cntr > works_number) then 			
+		IF(loop_form) then
+			shared_block.impure_cntr := reset_offset;
+			shared_block.impure_subseed_counter := 0;
+			shared_block.impure_delay_cntr := 0;
+			--shared_block.impure_backup_flag := (others=>'1');
+		END IF;
+			
+	END IF;
+	
+	return shared_block.impure_cntr;
+END FUNCTION;
+   ---------------------------------------- 
+   
+    PROCEDURE subseed_breeding (
+	SIGNAL  nencom			: in  STD_LOGIC;	--control main com buss
+	preseed					: in  SEED_TYPEDEF;
+	CONSTANT work_id 		:in INTEGER;
+	
+	newseed					: out  SUBSEED_TYPEDEF;
+	works_number			:in INTEGER
+	) is
+	CONSTANT bus_isready :STD_LOGIC:= '0';
+	CONSTANT bus_isbusy :STD_LOGIC:= '1';
+  begin
+	IF(preseed = work_id) then	
+		IF(shared_block.impure_backup_flag(4) /= nencom and nencom = bus_isready and shared_block.impure_delay_cntr = 0) then
+			--write on bus from 
+			shared_block.impure_backup_flag(4) := nencom;
+			
+			shared_block.impure_subseed_counter := shared_block.impure_subseed_counter +1;
+			shared_block.impure_backup_flag(3) := '1';
+			
+			newseed := shared_block.impure_subseed_counter;
+			IF(shared_block.impure_subseed_counter+1 > works_number) then
+				 shared_block.impure_subseed_counter := 0;
+			END IF;
+			
+			
+		else 
+			shared_block.impure_backup_flag(4) := nencom;
+		END IF;
+		
+	END IF;
+  END PROCEDURE subseed_breeding;
+----------------------------------------.
+
+FUNCTION to_std_logic(  l: INTEGER ) RETURN STD_LOGIC is
+begin
+	IF( l = 0 ) then 
+		return '0';
+	else 
+		return '1';
+	END IF;
+END FUNCTION;
+----------------------------------------
+
+----------------------------------------
+FUNCTION vector_event( vect : STD_LOGIC_VECTOR; backup_vect : STD_LOGIC_VECTOR  ) RETURN STD_LOGIC is
+	variable res: BOOLEAN := false;
+begin
+	IF(vect = backup_vect)	then return '0';
+	else return '1';
+	END IF;
+
+END FUNCTION;
+----------------------------------------
+FUNCTION vector_event( vect : BOOLEAN_VECTOR; backup_vect : BOOLEAN_VECTOR  ) RETURN STD_LOGIC is
+	variable res: BOOLEAN := false;
+begin
+	IF(vect = backup_vect)	then return '0';
+	else return '1';
+	END IF;
+
+END FUNCTION;
+-- FUNCTION delay_ms(  CONSTANT clk_freq : INTEGER; clk_count : INTEGER; delay: INTEGER  ) RETURN BOOLEAN is
+
+-- begin
+
+	-- --seprating INTEGER and real part
+	-- return clk_count < (delay *  INTEGER(real(clk_freq)/1.0e3));		--(delay* clk/1000)/clk = delay(ms)
+
+-- END FUNCTION;
+-- -- ------------------------------------------------------------------------------
+-- FUNCTION delay_us(CONSTANT clk_freq : INTEGER; clk_count : INTEGER; delay: INTEGER  ) RETURN BOOLEAN is
+
+-- begin
+
+	-- --seprating INTEGER and real part
+	-- return clk_count < (delay *  INTEGER(real(clk_freq)/1.0e6));		--(delay* clk/1000)/clk = delay(ms)
+
+-- END FUNCTION;
+-- -- ------------------------------------------------------------------------------
+-- --micro second delay generator machine
+-- FUNCTION udelay_machine_serial_serial_serial_serial(CONSTANT clk_freq : NATURAL; clk_count : NATURAL; delays: integer_vector  ) RETURN boolean_vector is
+ -- variable ret_vect :boolean_vector(delays'range);
+ -- CONSTANT delay_vector :integer_vector(delays'range) := accumulate(delays);
+-- begin
+	
+	-- l0:for i in delays'low to delays'high loop
+		-- ret_vect(i) :=  delay_us(clk_freq, clk_count, delay_vector(i));		
+	-- END loop l0;
+	
+-- return ret_vect;
+
+-- END FUNCTION;
+-- ------------------------------------------------------------------------------
+-- --mili second delay generator machine
+-- FUNCTION mdelay_machine(CONSTANT clk_freq : NATURAL; clk_count : NATURAL; delays: integer_vector  ) RETURN boolean_vector is
+ -- variable ret_vect :boolean_vector(delays'range);
+ -- CONSTANT delay_vector :integer_vector(delays'range) := accumulate(delays);
+-- begin
+	
+	-- l0:for i in delays'low to delays'high loop
+		-- ret_vect(i) :=  delay_ms(clk_freq, clk_count, delay_vector(i));		
+	-- END loop l0;
+	
+-- return ret_vect;
+
+-- END FUNCTION;
+-- ------------------------------------------------------------------------------
+END STD_LCM;
+--------------------------------------------------------------------
 

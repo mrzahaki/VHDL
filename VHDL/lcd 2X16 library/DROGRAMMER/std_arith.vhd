@@ -24,10 +24,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use ieee.numeric_std.all;
+
+use work.std_type.all;
+
 --std_signed package 
 package std_arith is 
 
-TYPE integer_vector	is array(NATURAL range<>) of INTEGER;
+--TYPE integer_vector	is array(NATURAL range<>) of INTEGER;
 
 
 --you can change the i/o(input and output) width and number of adder inputs in here (selectable n bit sign magnitude adder with n inputs)
@@ -38,13 +41,22 @@ constant sadder_io_numbers 	:	INTEGER := 4;--default an adder with 2 inputs
 --define general vector TYPE in sign magnitude adder 
 --subtype sadder_io_type	is STD_LOGIC_VECTOR(sadder_io_width downto 1);
 --defining main vector used in sadder package(input and out and other)
---TYPE sadder_vector is array(sadder_io_numbers downto 1)	of sadder_io_type;
+TYPE SUB_SORT_TYPEDEF IS ARRAY(1 TO 2)	OF INTEGER;
+TYPE SORT_TYPEDEF IS ARRAY(NATURAL RANGE<>)	OF SUB_SORT_TYPEDEF;
 
 function sm2tc(inp :STD_LOGIC_VECTOR) return STD_LOGIC_VECTOR ;
 FUNCTION signed_not  ( l : STD_LOGIC_VECTOR  ) RETURN STD_LOGIC_VECTOR;
 FUNCTION sm_abs  ( l : STD_LOGIC_VECTOR  ) RETURN INTEGER;
 FUNCTION accumulate  ( l : integer_vector  ) RETURN integer_vector;
+FUNCTION lw_sort  ( l : integer_vector ) RETURN SORT_TYPEDEF;
+FUNCTION max  ( l : integer; r:integer ) RETURN integer;
+FUNCTION max  ( l : integer_vector ) RETURN integer;
+FUNCTION indexof  ( l : integer_vector; elem:integer; false_num:integer ) RETURN integer;
+
+FUNCTION normal_sort  ( l : integer_vector ) RETURN integer_vector ;
+FUNCTION sorted_index  ( l : integer_vector ) RETURN integer_vector ;
 function "+"(l :STD_LOGIC_VECTOR; r:STD_LOGIC) return unsigned;
+function mux( inp : STD_LOGIC_VECTOR; sel : STD_LOGIC_VECTOR) return STD_LOGIC;
 -------------------------------------------------------------------------------------main functions definition
 --extend sign magnitude adder
 -- component extend_sadder 
@@ -123,12 +135,47 @@ function sm2tc(inp :STD_LOGIC_VECTOR) return STD_LOGIC_VECTOR is
   
   return ((not tmp) and inp) or ( ( not(inp) + 1) and tmp);
 end sm2tc;
+-----------------------------------------------------------------------------
+function mux( inp : STD_LOGIC_VECTOR; sel : STD_LOGIC_VECTOR) return STD_LOGIC is 
+begin 
+
+	return( inp(to_integer( unsigned(sel) )) );
+
+end function;
 --------------------------------------------------------------------------------------------------------------inner functions
 function "+"(l :STD_LOGIC_VECTOR; r:STD_LOGIC) return unsigned is
 	variable tmp: STD_LOGIC_VECTOR(l'range) := (l'range=>'0');
   begin
 	tmp(tmp'low) := r;
   return unsigned(l) + unsigned(tmp);
+end function;
+--------------------------------------------------------------------------------------------------------------inner functions
+FUNCTION max  ( l : integer; r:integer ) RETURN integer is
+
+begin
+if(l > r) then return l; end if;
+return r;
+end function;
+--------------------------------------------------------------------------------------------------------------inner functions
+FUNCTION max  ( l : integer_vector ) RETURN integer is
+ variable tmp: integer;
+ -- variable buf: integer_vector(l'range) := l ;
+begin
+tmp:=l(l'low);
+for i in l'low+1 to l'high loop
+	tmp :=  max(tmp, l(i));
+end loop;
+
+return tmp;
+end function;
+--------------------------------------------------------------------------------------------------------------inner functions
+FUNCTION indexof  ( l : integer_vector; elem:integer; false_num:integer ) RETURN integer is
+
+begin
+	for i in l'range loop
+			if(l(i) = elem) then return i; end if;
+	end loop;
+	return false_num;
 end function;
 ------------------------------------------------------------------------------
 FUNCTION signed_not  ( l : STD_LOGIC_VECTOR  ) RETURN STD_LOGIC_VECTOR is
@@ -167,7 +214,70 @@ begin
 	return ret_vect;
 	
 end function;
+-----------------------------------------------------------------
+--SORT_TYPEDEF=>( sorted value, pre index)
+FUNCTION lw_sort  ( l : integer_vector ) RETURN SORT_TYPEDEF IS--sort low to high
 
+variable res : SORT_TYPEDEF(1 to l'length);
+variable temp : SORT_TYPEDEF(1 to 2);
+BEGIN
+	for i in  l'range loop
+		res(i)(1) :=  l(i);
+		res(i)(2) := i;
+	end loop;
+	
+	for i in  1 to res'length loop
+		for j in (i+1) to res'length loop
+		
+		if(res(i)(1) > res(j)(1)) then
+		
+		    temp(1) := res(i);    
+            res(i) := res(j);    
+            res(j) := temp(1);
+		
+		end if;
+		
+		end loop;
+	end loop;
+	
+	return res;
+	
+END FUNCTION;
+-----------------------------------------------------------------
+FUNCTION sorted_index  ( l : integer_vector ) RETURN integer_vector IS
+	variable tmp : SORT_TYPEDEF(1 to l'length);
+	variable res : integer_vector(1 to l'length);
+BEGIN
+	tmp := lw_sort(l);
+	for i in 1 to res'length loop
+		res(i) := tmp(i)(2); 
+	end loop;
+	return res;
+END FUNCTION;
+-----------------------------------------------------------------
+--SORT_TYPEDEF=>( sorted value, pre index)
+FUNCTION normal_sort  ( l : integer_vector ) RETURN integer_vector IS--sort low to high
+
+variable res : integer_vector(1 to l'length) := l ;
+variable temp : integer;
+BEGIN
+
+	for i in  1 to res'length loop
+		for j in (i+1) to res'length loop
+		
+		if(res(i) > res(j)) then
+		
+		    temp := res(i);    
+            res(i) := res(j);    
+            res(j) := temp;
+		
+		end if;
+		
+		end loop;
+	end loop;
+	return res;
+	
+END FUNCTION;
 ---------------------------------------------------------------------------------------
 end package body;
 ---------------------------------------------------------------------------------------signed multiplier
@@ -237,8 +347,9 @@ begin
 		--cout
 		carry_out => adders_result(1)(io_width),
 		--sum out
-		outp(1) => mulRes(2),
-		outp(io_width downto 2) => (adders_result(1)(io_width-1 downto 1) )
+		
+		outp(io_width downto 2) => (adders_result(1)(io_width-1 downto 1) ),
+		outp(1) => mulRes(2)
 	);
 	
 	
@@ -254,8 +365,8 @@ begin
 			--cout
 			carry_out => adders_result(i+1)(io_width),
 			--sum outs
-			outp(1) => mulRes(i + 2),
-			outp(io_width downto 2) => adders_result(i+1)(io_width-1 downto 1)
+			outp(io_width downto 2) => adders_result(i+1)(io_width-1 downto 1),
+			outp(1) => mulRes(i + 2)
 		);	
 		
 		

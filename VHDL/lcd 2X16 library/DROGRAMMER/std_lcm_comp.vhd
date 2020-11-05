@@ -13,6 +13,7 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 
 use work.std_lcm.all;
+
 --bidirectional bus controller 
 --if oe = 1 input mode (write on bus)
 --if oe = 0 output mode (read from bus)
@@ -58,6 +59,8 @@ LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 use work.std_lcm.all;
 use work.std_arith.all;
+use work.std_delay.ALL;
+use work.std_type.all;
 
 ENTITY lcm_main IS
   GENERIC(
@@ -82,7 +85,7 @@ END lcm_main;
 
 ARCHITECTURE structural OF lcm_main IS
 ---------------------------------------- types ------------------------------------------- 
-  TYPE CONTROL IS( power_up, idle, initialize, busy_check, write_instruction, WriteData);
+  TYPE CONTROL IS( efficiency_up, idle, initialize, busy_check, write_instruction, WriteData);
   
 ---------------------------------------- constants ------------------------------------------- 
   --define @mode_of_operation (write/read  instruction/data)
@@ -161,7 +164,7 @@ ARCHITECTURE structural OF lcm_main IS
   PROCESS(clk, data_read, data_write)
 	--event counter for timing
     VARIABLE clk_count 			: NATURAL := 0; 
-	--In this section, we enter the required delays for each command separately and are finally processed by udelay_machine function.
+	--In this section, we enter the required delays for each command separately and are finally processed by udelay_machine_serial function.
 	--specifically used in initialize section
 	CONSTANT instruction_delay_generator	: integer_vector(1 to 10) := (
 		10, 50, 10, 50, 10, 2000, 10, 50, 10, 60	--us timing
@@ -207,13 +210,13 @@ ARCHITECTURE structural OF lcm_main IS
 				state <= idle;
 			END IF;
 		 
-        --lcd, power suply startup delay 
-        WHEN power_up =>
+        --lcd, efficiency suply startup delay 
+        WHEN efficiency_up =>
 			  nencom <= machine_com_close;
-			  IF( delay_ms(clk_freq, clk_count, 50) ) THEN    --wait 50 ms
+			  IF( delay_ms(clk_freq, clk_count, 10 )) THEN    --wait 50 ms
 				clk_count := clk_count + 1;
-				state <= power_up;
-			  ELSE                                       --power-up complete
+				state <= efficiency_up;
+			  ELSE                                       --efficiency-up complete
 				lcm_bus_state <= LCM_MODE_BUS_WRITE_INSTRUCTION;
 				data_write <= (data_write'range =>'0');
 				clk_count := 0;
@@ -226,7 +229,7 @@ ARCHITECTURE structural OF lcm_main IS
 			  lcm_bus_state <= LCM_MODE_BUS_WRITE_INSTRUCTION;
 			  
 			  clk_count := clk_count + 1;
-			  instruction_delay := udelay_machine(clk_freq, clk_count, instruction_delay_generator);
+			  instruction_delay := udelay_machine_serial(clk_freq, clk_count, instruction_delay_generator);
 			 
 			  IF( instruction_delay(1) ) THEN       --function set
 				data_write <= "0011" & as_display_lines_size & "00";--2bit
@@ -275,7 +278,8 @@ ARCHITECTURE structural OF lcm_main IS
 				state <= busy_check;
 				clk_count := clk_count + 1;
 			  ELSE
-				tmp := data_read(8); en <= '0';
+				tmp := '0';--data_read(8);
+				en <= '0';
 				clk_count := 0;
 					IF(tmp = '1') then
 						state <= busy_check;
@@ -317,7 +321,7 @@ ARCHITECTURE structural OF lcm_main IS
   
        --reset
        IF(nrst = '0') THEN
-           state <= power_up;
+           state <= efficiency_up;
        END IF;
 	   
     backup_vector := machine_com; --take backup
