@@ -86,7 +86,7 @@ SHARED  VARIABLE shared_block : SHARED_LCM_TYPE :=(
 --main types used to communicate with lcd
 
 SUBTYPE LCM_I8080_DATATYPE	is STD_LOGIC_VECTOR(8 downto 1);
---LCM_COM_DATATYPE foormat : (msb) lcd enable, read/write, data/setup pin
+--LCM_COM_DATATYPE format : (msb) lcd enable, read/write, data/setup pin
 SUBTYPE LCM_COM_DATATYPE	is STD_LOGIC_VECTOR(3 downto 1);
 
 
