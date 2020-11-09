@@ -9,19 +9,26 @@ a few lines of code to the main body of the program.
 
 ### Let's start writing a simple program based on the liquid crystal display driver
 
-
+- First we need to include std_lcm module
 ```vhdl
 LIBRARY DROGRAMMER;
 USE DROGRAMMER.std_lcm.all;
 USE DROGRAMMER.std_arith.all;
 ```
+
+- In this section we define the signals we want to use in the main part of the program. Note that using this driver requires an external clock source
 ```vhdl
 SIGNAL machine_com:  LCM_BUS_TYPE:=(OTHERS=>'0');
 SIGNAL listen_flg, clk, rst :STD_LOGIC;
 ```
 
+- We need to define two signals to communicate with the LCD, 
 ```vhdl
---2X16 LCD
+--refer to std_lcm
+-- SUBTYPE LCM_I8080_DATATYPE	is STD_LOGIC_VECTOR(8 downto 1);
+-- LCM_COM_DATATYPE format : (msb) lcd enable, read/write, data/setup pin
+-- SUBTYPE LCM_COM_DATATYPE	is STD_LOGIC_VECTOR(3 downto 1);
+
 lcd_com    	:OUT LCM_COM_DATATYPE  ;        
 lcd_data   	:INOUT  LCM_I8080_DATATYPE;
  ```
@@ -61,7 +68,7 @@ lcm_gotoxy(
 	machine_com,
 	subseed,
 	2,0,	--x, y
-	1
+	2 --second jop
 );
 
 lcm_string(
@@ -69,7 +76,7 @@ lcm_string(
 	machine_com,
 	subseed,
 	"the name of",
-	2
+	3
  );
  
  lcm_gotoxy(
@@ -77,7 +84,7 @@ lcm_string(
 	machine_com,
 	subseed,
 	7,1,	--x, y
-	3
+	4
 	);
 
 lcm_string(
@@ -85,7 +92,7 @@ lcm_string(
 	machine_com,
 	subseed,
 	"AllAH",
-	4
+	5
  );
 ```
 
