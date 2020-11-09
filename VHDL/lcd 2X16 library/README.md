@@ -21,6 +21,7 @@ USE DROGRAMMER.std_arith.all;
 SIGNAL machine_com:  LCM_BUS_TYPE:=(OTHERS=>'0');
 SIGNAL listen_flg :STD_LOGIC;
 SIGNAL clk, rst :STD_LOGIC := '1';
+CONSTANT clock_frequency : INTEGER := 10e6;
 ```
 
 - We need to define two signals to communicate with the LCD, 
@@ -36,7 +37,7 @@ lcd_data   	:INOUT  LCM_I8080_DATATYPE;
  
 - This component is a low-level controller for other functions and procedures written based on the finite state machine. 
 ```vhdl
-FA0:lcm_main port map(clk=>clk, 
+FA0:lcm_main generic map(clock_frequency) port map(clk=>clk, 
                       nrst => rst,
                       machine_com => machine_com,
                       nencom=>listen_flg,
@@ -87,7 +88,56 @@ lcm_string(
 	3 --third job
  );
 ```
-**With this driver, that's all you need to do in VHDL to set up an LCD \:.**
+**With this driver, that's all you need to do in VHDL to set up an LCD.**
+
+- Well, lets modify the above code to achieve a simple blinking 'hello world' text on the screen:
+```vhdl
+seed := seed_breeding(listen_flg,
+			rst, -- reset signal 
+			8, -- number of jobs
+			2, -- 'reset-offset' number. After reset 
+			true -- Change 'false' value to 'true', by doing this, after completing the to-do list, the driver will start working from task number 2 ('reset-offset')(We do not want to initialize the LCD forever), and this will continue forever as a while loop. 
+);
+
+-- We try to initialize lcd with three parameters: 
+--	LCD_INIT_INC_NOSHIFT: Set the moving direction of cursor and display. See page 11 of the attached datasheet.	
+--	LCD_INIT_NO_CURSOR_NO_BLINK: Control display/cursor/blink ON/OFF.
+--	LCD_INIT_2ROW_5X7: Display line number control.
+lcm_init(
+	listen_flg, machine_com, seed,
+	LCD_INIT_INC_NOSHIFT , LCD_INIT_NO_CURSOR_NO_BLINK , LCD_INIT_2ROW_5X7,
+	1 --first jop
+);
 
 
+--clear display
+lcm_instruction(
+	listen_flg, machine_com, seed,
+	LCD_CMD_CLEAR_DISPLAY,
+	2
+);
+
+-- Set cursor position
+lcm_gotoxy(
+	listen_flg, machine_com, seed,
+	2,0,	--x, y
+	3 --second jop
+);
+
+-- Send string to LCD
+lcm_string(
+	listen_flg, machine_com, seed,
+	"Hello World",
+	4 --third job
+ );
+ 
+ lcm_delay(
+	listen_flg, machine_com, seed,
+	open,
+	1000, --based on millisecond
+	clock_frequency,
+	5
+);
+ 
+```
 
