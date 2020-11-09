@@ -87,6 +87,7 @@ lcm_string(
 	3 --third job
  );
 ```
-**With this driver, that's all you need to do in VHDL to set up an LCD**
+**With this driver, that's all you need to do in VHDL to set up an LCD \:.**
+
 
 
