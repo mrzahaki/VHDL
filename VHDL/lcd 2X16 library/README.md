@@ -94,7 +94,7 @@ lcm_string(
 ```vhdl
 seed := seed_breeding(listen_flg,
 			rst, -- reset signal 
-			8, -- number of jobs
+			5, -- number of jobs
 			2, -- 'reset-offset' number. After reset 
 			true -- Change 'false' value to 'true', by doing this, after completing the to-do list, the driver will start working from task number 2 ('reset-offset')(We do not want to initialize the LCD forever), and this will continue forever as a while loop. 
 );
