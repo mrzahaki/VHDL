@@ -15,6 +15,16 @@ LIBRARY DROGRAMMER;
 USE DROGRAMMER.std_lcm.all;
 USE DROGRAMMER.std_arith.all;
 ```
+```vhdl
+SIGNAL machine_com:  LCM_BUS_TYPE:=(OTHERS=>'0');
+SIGNAL listen_flg, clk, rst :STD_LOGIC;
+```
+
+```vhdl
+--2X16 LCD
+lcd_com    	:OUT LCM_COM_DATATYPE  ;        
+lcd_data   	:INOUT  LCM_I8080_DATATYPE;
+ ```
 
 ```vhdl
 FA0:lcm_main port map(clk=>clk, 
@@ -25,6 +35,7 @@ FA0:lcm_main port map(clk=>clk,
                       lcd_data=>lcd_data);
 ```
 
+
 ```vhdl
 process(clk, machine_com, listen_flg)
 		variable seed : seed_typedef:=0; --true
@@ -35,11 +46,46 @@ end process;
 ```
 
 ```vhdl
-process(clk, machine_com, listen_flg)
-		variable seed : seed_typedef:=0; --true
-begin
+seed := seed_breeding(listen_flg, '1', 5, 0, false);
 
+lcm_init(
+	listen_flg,
+	machine_com,
+	seed,
+	LCD_INIT_INC_NOSHIFT , LCD_INIT_NO_CURSOR_NO_BLINK , LCD_INIT_2ROW_5X7,
+	1 --first jop
+);
 
-end process;
+lcm_gotoxy(
+	listen_flg,
+	machine_com,
+	subseed,
+	2,0,	--x, y
+	1
+);
+
+lcm_string(
+	listen_flg,
+	machine_com,
+	subseed,
+	"the name of",
+	2
+ );
+ 
+ lcm_gotoxy(
+	listen_flg,
+	machine_com,
+	subseed,
+	7,1,	--x, y
+	3
+	);
+
+lcm_string(
+	listen_flg,
+	machine_com,
+	subseed,
+	"AllAH",
+	4
+ );
 ```
 
