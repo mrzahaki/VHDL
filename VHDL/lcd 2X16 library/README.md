@@ -33,7 +33,8 @@ SIGNAL clk, rst :STD_LOGIC := '1';
 lcd_com    	:OUT LCM_COM_DATATYPE  ;        
 lcd_data   	:INOUT  LCM_I8080_DATATYPE;
  ```
-
+ 
+- This component is a low-level controller for other functions and procedures written based on the finite state machine. 
 ```vhdl
 FA0:lcm_main port map(clk=>clk, 
                       nrst => rst,
@@ -43,7 +44,7 @@ FA0:lcm_main port map(clk=>clk,
                       lcd_data=>lcd_data);
 ```
 
-
+- If we want to work with higher level functions, we need to add a "process" to our program. Note that the seed variable is used to synchronize and schedule tasks on a clock basis.
 ```vhdl
 process(clk, machine_com, listen_flg)
 		variable seed : seed_typedef:=0; --true
@@ -53,6 +54,7 @@ begin
 end process;
 ```
 
+- Here we try to send a simple string to the lcd, If we consider each 'UI' procedure as a seed, the 'seed_breeding' function controls the time and determines how each seed accesses the clock gate. 
 ```vhdl
 seed := seed_breeding(listen_flg, '1', 5, 0, false);
 
@@ -68,7 +70,7 @@ lcm_gotoxy(
 	listen_flg,
 	machine_com,
 	subseed,
-	2,0,	--x, y
+	1,0,	--x, y
 	2 --second jop
 );
 
@@ -76,24 +78,8 @@ lcm_string(
 	listen_flg,
 	machine_com,
 	subseed,
-	"the name of",
+	"name of Allah",
 	3
- );
- 
- lcm_gotoxy(
-	listen_flg,
-	machine_com,
-	subseed,
-	7,1,	--x, y
-	4
-	);
-
-lcm_string(
-	listen_flg,
-	machine_com,
-	subseed,
-	"AllAH",
-	5
  );
 ```
 
