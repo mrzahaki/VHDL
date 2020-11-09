@@ -54,10 +54,19 @@ begin
 end process;
 ```
 
-- Here we try to send a simple string to the lcd, If we consider each 'UI' procedure as a seed, the 'seed_breeding' function controls the time and determines how each seed accesses the clock gate. 
+- Here we try to send a simple string to the lcd, If we consider each 'UI' procedure as a seed, the 'seed_breeding' function controls the time and determines how each seed accesses the clock gate. please enter the following code in the 'process' body.
 ```vhdl
-seed := seed_breeding(listen_flg, '1', 5, 0, false);
+seed := seed_breeding(listen_flg,
+			rst, -- reset signal 
+			3, -- number of jobs
+			0, 
+			false
+);
 
+-- We try to initialize lcd with three parameters: 
+--	LCD_INIT_INC_NOSHIFT: Set the moving direction of cursor and display. See page 11 of the attached datasheet.	
+--	LCD_INIT_NO_CURSOR_NO_BLINK: Control display/cursor/blink ON/OFF.
+--	LCD_INIT_2ROW_5X7: Display line number control.
 lcm_init(
 	listen_flg,
 	machine_com,
@@ -66,20 +75,22 @@ lcm_init(
 	1 --first jop
 );
 
+-- Set cursor position
 lcm_gotoxy(
 	listen_flg,
 	machine_com,
-	subseed,
+	seed,
 	1,0,	--x, y
 	2 --second jop
 );
 
+-- Send string to LCD
 lcm_string(
 	listen_flg,
 	machine_com,
-	subseed,
+	seed,
 	"name of Allah",
-	3
+	3 --third job
  );
 ```
 
