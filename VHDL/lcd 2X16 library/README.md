@@ -68,27 +68,21 @@ seed := seed_breeding(listen_flg,
 --	LCD_INIT_NO_CURSOR_NO_BLINK: Control display/cursor/blink ON/OFF.
 --	LCD_INIT_2ROW_5X7: Display line number control.
 lcm_init(
-	listen_flg,
-	machine_com,
-	seed,
+	listen_flg, machine_com, seed,
 	LCD_INIT_INC_NOSHIFT , LCD_INIT_NO_CURSOR_NO_BLINK , LCD_INIT_2ROW_5X7,
 	1 --first jop
 );
 
 -- Set cursor position
 lcm_gotoxy(
-	listen_flg,
-	machine_com,
-	seed,
+	listen_flg, machine_com, seed,
 	1,0,	--x, y
 	2 --second jop
 );
 
 -- Send string to LCD
 lcm_string(
-	listen_flg,
-	machine_com,
-	seed,
+	listen_flg, machine_com, seed,
 	"name of Allah",
 	3 --third job
  );
