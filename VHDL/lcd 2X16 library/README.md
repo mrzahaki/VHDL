@@ -19,7 +19,8 @@ USE DROGRAMMER.std_arith.all;
 - In this section we define the signals we want to use in the main part of the program. Note that using this driver requires an external clock source
 ```vhdl
 SIGNAL machine_com:  LCM_BUS_TYPE:=(OTHERS=>'0');
-SIGNAL listen_flg, clk, rst :STD_LOGIC;
+SIGNAL listen_flg :STD_LOGIC;
+SIGNAL clk, rst :STD_LOGIC := '1';
 ```
 
 - We need to define two signals to communicate with the LCD, 
