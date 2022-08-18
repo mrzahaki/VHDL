@@ -1,4 +1,4 @@
---	in the name of ALLAH
+--	W T A
 --
 -- brief: top module used shifter package (see work.shift.vhd)
 --
@@ -54,4 +54,3 @@ FA1: std_brshift Port map(
 
 end structural;
 ----------------------------------------------------------------------------------------------------------------
---	end with the name of ALLAH
