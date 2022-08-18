@@ -59,9 +59,11 @@ end component;
 
 
 <h4>typedef</h4>
+
 ```vhdl
 type integer_vector_array is  array (NATURAL range <>) of integer_vector ;
 ```
+
 ---
 
 
