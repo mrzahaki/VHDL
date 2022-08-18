@@ -3,10 +3,10 @@
 --
 --
 --
---
+-- 
 --		designer: hussein zahaki
 --   	FileName:         shift.vhd
---   	Dependencies:     work.std_mux and std_logic_1164 and std_logic_unsigned and numeric_std and math_real
+--   	Dependencies:     work.std_mux and std_logic_1164 and std_logic_unsigned 
 --		version: vhdl 2008(important)
 --
 --
@@ -144,7 +144,7 @@ generic(
 );
 Port( 	
 			inp 			:in  std_logic_vector( (shifter_size-1) downto 0); 		
-			shift_num 	:in  integer range 0 to inp'high;
+			shift_num 		:in  integer range 0 to inp'high;
 			outp 			:out std_logic_vector( (shifter_size-1) downto 0)
 );
                         

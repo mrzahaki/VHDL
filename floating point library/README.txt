@@ -16,4 +16,4 @@
 /lcd_isim_simulation.wcfg -> lcm2X16 simulation file in ISIM
 
 
-writed by hussein zahaki mansoor 9604903
+writed by hussein zahaki mansoor

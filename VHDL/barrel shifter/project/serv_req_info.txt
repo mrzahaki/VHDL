@@ -1,8 +1,0 @@
-<internal_error>
-	<executable>quartus_map.exe</executable>
-	<sub_system>MEM</sub_system>
-	<error>*** Fatal Error: Out of memory in module quartus_map.exe (721 megabytes used)</error>
-	<date>Sun Jun 14 12:37:14 2020</date>
-	<version>Version 15.1.0 Build 185 10/21/2015 SJ Lite Edition</version>
-</internal_error>
-

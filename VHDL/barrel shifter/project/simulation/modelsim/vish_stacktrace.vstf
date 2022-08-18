@@ -1,9 +1,0 @@
-# Current time Sat Jun 13 16:59:44 2020
-# ModelSim Stack Trace
-# Program = vish
-# Id = "10.4b"
-# Version = "2015.05"
-# Date = "May 27 2015"
-# Platform = win32pe
-
-Exception c000001d has occurred at address 057d5ac0. Traceback:

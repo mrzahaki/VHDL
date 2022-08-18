@@ -1,3 +1,5 @@
+W T A
+
 # Liquid crystal display driver based on VHDL
 
 This library, with a different approach than that of the similar libraries, uses the idea
