@@ -117,6 +117,7 @@ end component;
 </br>
 </br>
 <b>Floating point ALU</b>
+
 ```vhdl
 component float_alu 
 generic (
