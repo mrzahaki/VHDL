@@ -1,4 +1,4 @@
---in the name of allah
+-- W T A
 
 --		designed by hussein zahaki
 --		compiled in : quartus
@@ -76,7 +76,7 @@ begin
 	  
 		readline(file_VECTORS, v_ILINE);
 		read(v_ILINE, v_TERM2);
-		
+		 
 		readline(file_VECTORS, v_ILINE);--dont care
 		if(v_OPERATION = '*' ) then --multiply
 		

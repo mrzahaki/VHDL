@@ -1,4 +1,4 @@
---	in the name of ALLAH
+--	W T A
 --
 -- brief: sign magnitude adder
 --	param inp: is the input parameter and it is an array containing the numbers to be added.

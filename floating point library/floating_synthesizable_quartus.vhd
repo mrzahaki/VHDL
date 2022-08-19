@@ -1,4 +1,4 @@
---	in the name of allah
+--	W T A
 --	designed by hussein zahaki
 --		compiled in : quartus
 --		simulated in: ISE ISIM

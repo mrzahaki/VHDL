@@ -1,4 +1,4 @@
---in the name of allah
+-- W T A
 --library IEEE;
 --use IEEE.STD_LOGIC_1164.all;
 

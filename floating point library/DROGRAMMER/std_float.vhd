@@ -1,11 +1,11 @@
---in the name of allah
+--W T A
 
 -- vhdl 2008
 -- compiled in intel quartus and simulated with ISIM from XILINX ISE
 --------------------------------------------------------------------------------
 --					in the name of allah
 --
---
+-- 
 --
 --
 --		designer: 			hussein zahaki
@@ -29,7 +29,7 @@
 --		components:	
 --					- fadder	standard variable length floating point adder		(synthesizable)
 --					- fmul		standard variable length floating point multiplier	(synthesizable)
---		 
+--		  
 --		functions:
 --					fnormalization		floating point normalizer 	(used for convert Non-standard floating-point numbers to it's standard representation ) (important)
 --					frounding			floating point rounder		(used for convert Non-standard floating-point numbers to it's standard representation )	(important)
@@ -51,20 +51,7 @@
 -- 					"+"					(inner functions, The description is not mentioned)
 -- 					"-"					(inner functions, The description is not mentioned)
 --
--- 
--- 	useful functions:				
---					-gen_range				The gen_range function returns a sequence of numbers, starting from lower parameter, and increments by 1 , and stops before a specified number called higher.			
--- 				-gen_blshift_array	This function produces an array in which each element shifts(with blshift) relative to the previous index.	
---					-gen_brshift_array	This function produces an array in which each element shifts(with brshift) relative to the previous index.	
--- 
--- 
---
--- 
---
--- 
---
--- 
---
+
 -- 
 --------------------------------------------------------------------------------
 library IEEE;
@@ -118,7 +105,7 @@ constant float_quadruple_precision :float_type :=( quadruplePrecision_Significan
 constant float_octuple_precision :float_type :=( octuplePrecision_SignificandWidth,  octuplePrecision_ExponentWidth  );
 
 -------------------------------------------------
-component fmul 
+component fmul  
 generic (
 float_typedef :float_type := float_single_precision
 );

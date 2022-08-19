@@ -1,5 +1,5 @@
 --	in the name of ALLAH
---
+-- 
 -- brief: sign magnitude adder
 --	param inp: is the input parameter and it is an array containing the numbers to be added.
 -- note: this adder is an selectable m bit, sign magnitude adder with n inputs.
