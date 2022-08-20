@@ -85,7 +85,7 @@ constant opcode_multiplier  	:STD_LOGIC_VECTOR(2 DOWNTO 1) := "10";
 MSB  [sign], [float_type(1): exponent], [float_type(2): sinificant]		LSB
 ```
 
-<b>fadder</b>:	    floating point adder		(synthesizable)
+<b>fadder</b>:	    floating point adder
 
 ```vhdl
 component fadder
@@ -102,7 +102,7 @@ end component;
 </br>
 </br>
 
-<b>fmul</b>:		floating point multiplier	(synthesizable)
+<b>fmul</b>:		floating point multiplier
 
 ```vhdl
 component fmul 
