@@ -3,7 +3,6 @@
 # Arithmetic library 			
 
 ```vhdl
-    designer: 			hussein zahaki
     library name : 		DROGRAMMER	
     packages:     		std_arith, std_float, std_type
     type: 			synthesizable
