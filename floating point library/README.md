@@ -26,7 +26,8 @@ The floating point package contains functions and components to perform various 
 </br>
 </br>
 
-<h4>types</h4>	
+<h4>types</h4>
+
 ```vhdl
 TYPE float_type is array(2 downto 1) of INTEGER;
 ```
