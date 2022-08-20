@@ -10,7 +10,7 @@ info:
 ```vhdl
 package name: shift
 Dependencies:     work.std_mux and std_logic_1164 and std_logic_unsigned 
-version: vhdl 2008(important)
+version: vhdl 2008
 ```
 :memo: **Note:** Left and right directions are valid for (n down to m) descending type operations, shift directions are reversed for ascending type ranges.
 		
