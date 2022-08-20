@@ -5,9 +5,9 @@
 ```vhdl
     designer: 			hussein zahaki
     library name : 		DROGRAMMER	
-   	packages:     	std_arith, std_float, std_type
-    type: synthesizable
-    version: vhdl 2008
+    packages:     		std_arith, std_float, std_type
+    type: 			synthesizable
+    version: 			vhdl 2008
 ```
 
 :memo: **Note:** All functions and components are designed so that the Precision of the operations is variable and depends on user choice.
