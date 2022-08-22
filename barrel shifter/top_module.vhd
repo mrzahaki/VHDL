@@ -46,7 +46,7 @@ FA1: std_brshift Port map(
 			out_br
 );
 
--- just used in jeneration
+-- non-synthesizable section
 
 	out_r <= rshift(inp_r, shift_val);
 	out_l <= lshift(inp_l, shift_val);
