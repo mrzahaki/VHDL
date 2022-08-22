@@ -32,7 +32,6 @@ architecture structural of barrelshifter is
 
 begin
 
---synthesizable part
 FA0: std_blshift Port map( 	
 			inp_bl, 		
 			to_integer(unsigned(shift_num)),
@@ -46,7 +45,6 @@ FA1: std_brshift Port map(
 			out_br
 );
 
--- non-synthesizable section
 
 	out_r <= rshift(inp_r, shift_val);
 	out_l <= lshift(inp_l, shift_val);
