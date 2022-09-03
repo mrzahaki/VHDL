@@ -2,7 +2,7 @@
 --
 -- brief: top module used shifter package (see work.shift.vhd)
 --
--- designed by hussein zahaki
+-- designed by MrZahaki
 
 
 library ieee;
